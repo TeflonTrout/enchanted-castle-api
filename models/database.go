@@ -60,3 +60,37 @@ type Database struct {
 		}
 	}
 }
+
+type Card struct {
+	Abilities struct {
+	} `json:"abilities"`
+	Artist     string `json:"artist"`
+	BodyText   string `json:"body_text"`
+	CardNumber int    `json:"card_number"`
+	Color      string `json:"color"`
+	FlavorText string `json:"flavor_text"`
+	ID         int    `json:"id"`
+	ImageUrls  struct {
+		ArtCrop string `json:"art_crop"`
+		Foil    string `json:"foil"`
+		Large   string `json:"large"`
+		Medium  string `json:"medium"`
+		NoArt   string `json:"no_art"`
+		Small   string `json:"small"`
+	} `json:"image_urls"`
+	InkCost   string `json:"ink_cost"`
+	Inkable   bool   `json:"inkable"`
+	LoreValue string `json:"lore_value"`
+	Name      string `json:"name"`
+	Rarity    string `json:"rarity"`
+	SeriesID  any    `json:"series_id"`
+	Set       string `json:"set"`
+	SetCode   string `json:"set_code"`
+	SetID     any    `json:"set_id"`
+	Strength  string `json:"strength"`
+	Subtitle  string `json:"subtitle"`
+	Subtypes  any    `json:"subtypes"`
+	Traits    any    `json:"traits"`
+	Type      any    `json:"type"`
+	Willpower string `json:"willpower"`
+}

@@ -2,8 +2,6 @@ package main
 
 import (
 	"enchanted-castle-go/controllers"
-	"enchanted-castle-go/initalizers"
-
 	"log"
 	"os"
 
@@ -14,9 +12,9 @@ import (
 	supa "github.com/nedpals/supabase-go"
 )
 
-func init() {
-	initalizers.ConnectToSupabase()
-}
+// func init() {
+// 	initalizers.ConnectToSupabase()
+// }
 
 func main() {
 	err := godotenv.Load()
@@ -32,8 +30,12 @@ func main() {
 	router.Use(cors.Default())
 
 	// ROUTES
+	// GET ROUTES
 	router.GET("/all", controllers.GetAllCards(supabase))
-	router.GET("/cards/:setCode", controllers.GetAllCardsBySetCode(supabase))
-	router.GET("/cards", controllers.GetAllCardsByColor(supabase))
-	router.Run(":9090")
+	router.GET("/search", controllers.GetCardsByAdvanceSearch(supabase))
+	router.GET("/cards/:setCode", controllers.GetCardsBySetCode(supabase))
+	router.GET("/products", controllers.GetAllProducts(supabase))
+	router.GET("/products/:setCode", controllers.GetProductsBySetCode(supabase))
+
+	router.Run("localhost:9090")
 }
