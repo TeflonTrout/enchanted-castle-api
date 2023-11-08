@@ -12,10 +12,6 @@ import (
 	supa "github.com/nedpals/supabase-go"
 )
 
-// func init() {
-// 	initalizers.ConnectToSupabase()
-// }
-
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -34,8 +30,9 @@ func main() {
 	router.GET("/all", controllers.GetAllCards(supabase))
 	router.GET("/search", controllers.GetCardsByAdvanceSearch(supabase))
 	router.GET("/cards/:setCode", controllers.GetCardsBySetCode(supabase))
+	router.GET("/cards/:setCode/:cardNumber", controllers.GetSingleCardInSet(supabase))
 	router.GET("/products", controllers.GetAllProducts(supabase))
 	router.GET("/products/:setCode", controllers.GetProductsBySetCode(supabase))
 
-	router.Run("localhost:9090")
+	router.Run(":9090")
 }
