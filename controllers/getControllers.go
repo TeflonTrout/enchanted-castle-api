@@ -17,7 +17,7 @@ var validSetCodes = []string{"TFC", "RFB"}
 func GetAllCards(supabase *supa.Client) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var results []models.Card
-		err := supabase.DB.From("cards").Select("*").Execute(&results)
+		err := supabase.DB.From("all_cards").Select("*").Execute(&results)
 		if err != nil {
 			panic(err)
 		}
@@ -39,11 +39,12 @@ func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
 		inkCost, isInkCost := context.GetQueryArray("inkCost")
 		loreValue, isLoreValue := context.GetQueryArray("loreValue")
 		rarity, isRarity := context.GetQueryArray("rarity")
+		name, isName := context.GetQueryArray("name")
 		// bodyText, isBodyText := context.GetQueryArray("bodyText")
 
 		var results []models.Card
 
-		allCards := supabase.DB.From("cards").Select("*")
+		allCards := supabase.DB.From("all_cards").Select("*")
 
 		if isColors {
 			allCards.In("color", colors)
@@ -63,6 +64,9 @@ func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
 		if isRarity {
 			allCards.In("rarity", rarity)
 		}
+		if isName {
+			allCards.In("name", name)
+		}
 
 		err := allCards.Execute(&results)
 
@@ -81,21 +85,26 @@ func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
 func GetCardsBySetCode(supabase *supa.Client) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var results []models.Card
+		var setResults []any
 
 		set := context.Param("setCode")
 		upperSet := strings.ToUpper(set)
 
 		// CHECK IF SET CODE IS A VALID SET CODE
 		if slices.Contains(validSetCodes, upperSet) {
-			err := supabase.DB.From("cards").Select("*").Eq("set_code", upperSet).Execute(&results)
-
+			err := supabase.DB.From("all_cards").Select("*").Eq("card_set_code", upperSet).Execute(&results)
+			setErr := supabase.DB.From("card_sets").Select("*").Eq("set_code", upperSet).Execute(&setResults)
 			if err != nil {
+				panic(err)
+			}
+			if setErr != nil {
 				panic(err)
 			}
 
 			context.JSON(http.StatusOK, gin.H{
-				"length": len(results),
-				"data":   results,
+				"length":  len(results),
+				"data":    results,
+				"setData": setResults[0],
 			})
 		} else {
 			context.JSON(http.StatusBadRequest, gin.H{
@@ -106,6 +115,29 @@ func GetCardsBySetCode(supabase *supa.Client) gin.HandlerFunc {
 	return gin.HandlerFunc(fn)
 }
 
+// RETURN SINGLE CARD
+func GetSingleCardInSet(supabase *supa.Client) gin.HandlerFunc {
+	fn := func(context *gin.Context) {
+		var result any
+
+		set := context.Param("setCode")
+		upperSet := strings.ToUpper(set)
+		cardNumber := context.Param("cardNumber")
+
+		err := supabase.DB.From("all_cards").Select("*").Single().Eq("card_set_code", upperSet).Eq("number", cardNumber).Execute(&result)
+
+		if err != nil {
+			panic(err)
+		}
+
+		context.JSON(http.StatusOK, gin.H{
+			"data": result,
+		})
+	}
+	return gin.HandlerFunc(fn)
+}
+
+// RETURN ALL CARD PRODUCTS
 func GetAllProducts(supabase *supa.Client) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var results []any
@@ -118,6 +150,7 @@ func GetAllProducts(supabase *supa.Client) gin.HandlerFunc {
 	return gin.HandlerFunc(fn)
 }
 
+// SEARCH FOR PRODUCTS BY SET CODE
 func GetProductsBySetCode(supabase *supa.Client) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var results []any

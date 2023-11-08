@@ -18,5 +18,14 @@
     "titleBar.inactiveBackground": "#c9509799",
     "titleBar.inactiveForeground": "#e7e7e799"
   },
-  "peacock.color": "#c95097"
+  "peacock.color": "#c95097",
+  "cSpell.words": [
+    "godotenv",
+    "gonic",
+    "initalizers",
+    "inkable",
+    "joho",
+    "nedpals",
+    "supa"
+  ]
 }

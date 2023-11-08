@@ -62,35 +62,65 @@ type Database struct {
 }
 
 type Card struct {
-	Abilities struct {
-	} `json:"abilities"`
-	Artist     string `json:"artist"`
-	BodyText   string `json:"body_text"`
-	CardNumber int    `json:"card_number"`
-	Color      string `json:"color"`
-	FlavorText string `json:"flavor_text"`
-	ID         int    `json:"id"`
-	ImageUrls  struct {
-		ArtCrop string `json:"art_crop"`
-		Foil    string `json:"foil"`
-		Large   string `json:"large"`
-		Medium  string `json:"medium"`
-		NoArt   string `json:"no_art"`
-		Small   string `json:"small"`
-	} `json:"image_urls"`
-	InkCost   string `json:"ink_cost"`
+	Action      string `json:"action"`
+	Artist      string `json:"artist"`
+	Attack      int    `json:"attack"`
+	CardSetCode string `json:"card_set_code"`
+	CardSetID   int    `json:"card_set_id"`
+	Color       string `json:"color"`
+	ColorID     int    `json:"color_id"`
+	Edition     []struct {
+		Code string `json:"code"`
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	} `json:"edition"`
+	Flavor    string `json:"flavor"`
+	Franchise struct {
+		FranchiseCode string `json:"franchise_code"`
+		FranchiseID   int    `json:"franchise_id"`
+		FranchiseName string `json:"franchise_name"`
+	} `json:"franchise"`
+	ID        int    `json:"id"`
+	Image     string `json:"image"`
+	InkCost   int    `json:"ink_cost"`
 	Inkable   bool   `json:"inkable"`
-	LoreValue string `json:"lore_value"`
-	Name      string `json:"name"`
-	Rarity    string `json:"rarity"`
-	SeriesID  any    `json:"series_id"`
-	Set       string `json:"set"`
-	SetCode   string `json:"set_code"`
-	SetID     any    `json:"set_id"`
-	Strength  string `json:"strength"`
-	Subtitle  string `json:"subtitle"`
-	Subtypes  any    `json:"subtypes"`
-	Traits    any    `json:"traits"`
-	Type      any    `json:"type"`
-	Willpower string `json:"willpower"`
+	Language  string `json:"language"`
+	Languages struct {
+		DE struct {
+			Action   string `json:"action"`
+			CardID   int    `json:"card_id"`
+			Flavor   string `json:"flavor"`
+			Image    string `json:"image"`
+			Language string `json:"language"`
+			Name     string `json:"name"`
+			Title    string `json:"title"`
+		} `json:"DE"`
+		EN struct {
+			Action   string `json:"action"`
+			CardID   int    `json:"card_id"`
+			Flavor   string `json:"flavor"`
+			Image    string `json:"image"`
+			Language string `json:"language"`
+			Name     string `json:"name"`
+			Title    string `json:"title"`
+		} `json:"EN"`
+		FR struct {
+			Action   string `json:"action"`
+			CardID   int    `json:"card_id"`
+			Flavor   string `json:"flavor"`
+			Image    string `json:"image"`
+			Language string `json:"language"`
+			Name     string `json:"name"`
+			Title    string `json:"title"`
+		} `json:"FR"`
+	} `json:"languages"`
+	Lore          int    `json:"lore"`
+	Name          string `json:"name"`
+	Number        int    `json:"number"`
+	NumberInSet   string `json:"number_in_set"`
+	Rarity        string `json:"rarity"`
+	TextSeparator string `json:"text_separator"`
+	Title         string `json:"title"`
+	Type          string `json:"type"`
+	Willpower     int    `json:"willpower"`
 }
