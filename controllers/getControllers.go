@@ -13,6 +13,12 @@ import (
 
 var validSetCodes = []string{"TFC", "RFB"}
 
+func HealthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"health": "Server Online",
+	})
+}
+
 // RETURN ALL CARDS IN DATABASE
 func GetAllCards(supabase *supa.Client) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
