@@ -34,7 +34,6 @@ func initCronJob() {
 }
 
 func main() {
-	initCronJob()
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -48,6 +47,10 @@ func main() {
 	router.Use(cors.Default())
 	port := os.Getenv("PORT")
 
+	if port == "" {
+		port = "8080"
+	}
+
 	// ROUTES
 	// HEALTH CHECK
 	router.GET("/health", controllers.HealthCheck)
@@ -59,10 +62,11 @@ func main() {
 	router.GET("/products", controllers.GetAllProducts(supabase))
 	router.GET("/products/:setCode", controllers.GetProductsBySetCode(supabase))
 
-	if port == "" {
-		port = "8080"
-	}
-	if err := router.Run(":" + port); err != nil {
+	serverErr := router.Run(":" + port)
+	if serverErr != nil {
 		log.Panicf("error: %s", err)
 	}
+
+	fmt.Printf("Server running on port " + port)
+	// initCronJob()
 }
