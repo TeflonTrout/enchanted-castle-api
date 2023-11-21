@@ -36,7 +36,7 @@ func initCronJob() {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		fmt.Printf("Error loading .env file")
 	}
 
 	supabaseUrl := os.Getenv("SUPABASE_URL")
@@ -48,7 +48,7 @@ func main() {
 	port := os.Getenv("PORT")
 
 	if port == "" {
-		port = "8080"
+		port = "9090"
 	}
 
 	// ROUTES
