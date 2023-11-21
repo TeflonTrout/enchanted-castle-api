@@ -46,6 +46,7 @@ func main() {
 
 	router := gin.Default()
 	router.Use(cors.Default())
+	port := os.Getenv("PORT")
 
 	// ROUTES
 	// HEALTH CHECK
@@ -58,5 +59,10 @@ func main() {
 	router.GET("/products", controllers.GetAllProducts(supabase))
 	router.GET("/products/:setCode", controllers.GetProductsBySetCode(supabase))
 
-	router.Run()
+	if port == "" {
+		port = "8080"
+	}
+	if err := router.Run(":" + port); err != nil {
+		log.Panicf("error: %s", err)
+	}
 }
