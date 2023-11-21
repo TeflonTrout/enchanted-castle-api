@@ -58,5 +58,5 @@ func main() {
 	router.GET("/products", controllers.GetAllProducts(supabase))
 	router.GET("/products/:setCode", controllers.GetProductsBySetCode(supabase))
 
-	router.Run(":9090")
+	router.Run()
 }
