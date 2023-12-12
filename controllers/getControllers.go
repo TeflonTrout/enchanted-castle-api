@@ -3,6 +3,8 @@ package controllers
 import (
 	"enchanted-castle-go/models"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 
 	"slices"
@@ -28,9 +30,68 @@ func GetAllCards(supabase *supa.Client) gin.HandlerFunc {
 			panic(err)
 		}
 
+		// Paginate the data based on query parameters (e.g., page and itemsPerPage)
+		page := 1
+		itemsPerPage := 20
+
+		// Extract page and itemsPerPage from query parameters if provided
+		if sortParam := context.Request.URL.Query().Get("sort"); sortParam != "" {
+			if sortParam == "alphabetical" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Name < results[j].Name
+				})
+			}
+			if sortParam == "cardNumber" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Number < results[j].Number
+				})
+			}
+			if sortParam == "attack" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Attack > results[j].Attack
+				})
+			}
+			if sortParam == "willpower" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Willpower > results[j].Willpower
+				})
+			}
+			if sortParam == "lore" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Lore > results[j].Lore
+				})
+			}
+		}
+
+		// Extract page and itemsPerPage from query parameters if provided
+		if pageParam := context.Request.URL.Query().Get("page"); pageParam != "" {
+			page, _ = strconv.Atoi(pageParam)
+		}
+
+		if itemsPerPageParam := context.Request.URL.Query().Get("limit"); itemsPerPageParam != "" {
+			itemsPerPage, _ = strconv.Atoi(itemsPerPageParam)
+		}
+
+		// Calculate total pages
+		totalPages := (len(results) + itemsPerPage - 1) / itemsPerPage
+
+		// Paginate the data based on the requested page
+		startIndex := (page - 1) * itemsPerPage
+		endIndex := startIndex + itemsPerPage
+
+		// Ensure endIndex is within bounds
+		if endIndex > len(results) {
+			endIndex = len(results)
+		}
+
+		// Extract the items for the current page
+		paginatedItems := results[startIndex:endIndex]
+
 		context.JSON(http.StatusOK, gin.H{
-			"length": len(results),
-			"data":   results,
+			"limit":      len(paginatedItems),
+			"page":       page,
+			"totalPages": totalPages,
+			"results":    paginatedItems,
 		})
 	}
 	return gin.HandlerFunc(fn)
@@ -124,13 +185,13 @@ func GetCardsBySetCode(supabase *supa.Client) gin.HandlerFunc {
 // RETURN SINGLE CARD
 func GetSingleCardInSet(supabase *supa.Client) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
-		var result any
+		var result models.Card
 
 		set := context.Param("setCode")
 		upperSet := strings.ToUpper(set)
 		cardNumber := context.Param("cardNumber")
 
-		err := supabase.DB.From("all_cards").Select("*").Single().Eq("card_set_code", upperSet).Eq("number", cardNumber).Execute(&result)
+		err := supabase.DB.From("all_cards").Select("*").Single().Eq("set_code", upperSet).Eq("number", cardNumber).Execute(&result)
 
 		if err != nil {
 			panic(err)
