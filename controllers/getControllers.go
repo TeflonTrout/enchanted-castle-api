@@ -91,7 +91,7 @@ func GetAllCards(supabase *supa.Client) gin.HandlerFunc {
 			"limit":      len(paginatedItems),
 			"page":       page,
 			"totalPages": totalPages,
-			"results":    paginatedItems,
+			"data":       paginatedItems,
 		})
 	}
 	return gin.HandlerFunc(fn)
@@ -107,6 +107,7 @@ func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
 		loreValue, isLoreValue := context.GetQueryArray("loreValue")
 		rarity, isRarity := context.GetQueryArray("rarity")
 		name, isName := context.GetQueryArray("name")
+		franchiseCode, isFranchiseCode := context.GetQueryArray("franchiseCode")
 		// bodyText, isBodyText := context.GetQueryArray("bodyText")
 
 		var results []models.Card
@@ -134,15 +135,77 @@ func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
 		if isName {
 			allCards.In("name", name)
 		}
+		if isFranchiseCode {
+			allCards.In("franchise->>franchise_code", franchiseCode)
+		}
 
 		err := allCards.Execute(&results)
+
+		// Paginate the data based on query parameters (e.g., page and itemsPerPage)
+		page := 1
+		itemsPerPage := 20
+
+		// Extract page and itemsPerPage from query parameters if provided
+		if sortParam := context.Request.URL.Query().Get("sort"); sortParam != "" {
+			if sortParam == "alphabetical" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Name < results[j].Name
+				})
+			}
+			if sortParam == "cardNumber" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Number < results[j].Number
+				})
+			}
+			if sortParam == "attack" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Attack > results[j].Attack
+				})
+			}
+			if sortParam == "willpower" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Willpower > results[j].Willpower
+				})
+			}
+			if sortParam == "lore" {
+				sort.Slice(results, func(i, j int) bool {
+					return results[i].Lore > results[j].Lore
+				})
+			}
+		}
+
+		// Extract page and itemsPerPage from query parameters if provided
+		if pageParam := context.Request.URL.Query().Get("page"); pageParam != "" {
+			page, _ = strconv.Atoi(pageParam)
+		}
+
+		if itemsPerPageParam := context.Request.URL.Query().Get("limit"); itemsPerPageParam != "" {
+			itemsPerPage, _ = strconv.Atoi(itemsPerPageParam)
+		}
+
+		// Calculate total pages
+		totalPages := (len(results) + itemsPerPage - 1) / itemsPerPage
+
+		// Paginate the data based on the requested page
+		startIndex := (page - 1) * itemsPerPage
+		endIndex := startIndex + itemsPerPage
+
+		// Ensure endIndex is within bounds
+		if endIndex > len(results) {
+			endIndex = len(results)
+		}
+
+		// Extract the items for the current page
+		paginatedItems := results[startIndex:endIndex]
 
 		if err != nil {
 			panic(err)
 		}
 		context.JSON(http.StatusOK, gin.H{
-			"length": len(results),
-			"data":   results,
+			"limit":      len(paginatedItems),
+			"page":       page,
+			"totalPages": totalPages,
+			"data":       paginatedItems,
 		})
 	}
 	return gin.HandlerFunc(fn)
