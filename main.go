@@ -17,20 +17,16 @@ import (
 	supa "github.com/nedpals/supabase-go"
 )
 
-func initCronJob() {
-	s := gocron.NewScheduler(time.UTC)
+func pingHealthEndpoint() {
+	url := "https://enchanted-castle-server.onrender.com/health"
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer resp.Body.Close()
 
-	s.Every(12).Minutes().Do(func() {
-		res, err := http.Get("https://enchanted-castle-server.onrender.com/health")
-		if err != nil {
-			fmt.Printf("error making http request: %s\n", err)
-		}
-
-		fmt.Printf("client: got response!\n")
-		fmt.Printf("client: status code: %s\n", res.Status)
-	})
-
-	s.StartBlocking()
+	fmt.Printf("Ping to %s - Status: %s\n", url, resp.Status)
 }
 
 func main() {
@@ -51,6 +47,12 @@ func main() {
 		port = "9090"
 	}
 
+	// create a scheduler
+	scheduler := gocron.NewScheduler(time.UTC)
+	interval := 14
+
+	scheduler.Every(uint64(interval)).Minutes().Do(pingHealthEndpoint)
+
 	// ROUTES
 	// HEALTH CHECK
 	router.GET("/health", controllers.HealthCheck)
@@ -68,5 +70,7 @@ func main() {
 	}
 
 	fmt.Printf("Server running on port " + port)
-	// initCronJob()
+
+	// start the scheduler
+	scheduler.StartBlocking()
 }

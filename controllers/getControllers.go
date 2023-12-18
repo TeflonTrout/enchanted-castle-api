@@ -159,7 +159,7 @@ func GetCardsBySetCode(supabase *supa.Client) gin.HandlerFunc {
 
 		// CHECK IF SET CODE IS A VALID SET CODE
 		if slices.Contains(validSetCodes, upperSet) {
-			err := supabase.DB.From("all_cards").Select("*").Eq("card_set_code", upperSet).Execute(&results)
+			err := supabase.DB.From("all_cards").Select("*").Eq("set_code", upperSet).Execute(&results)
 			setErr := supabase.DB.From("card_sets").Select("*").Eq("set_code", upperSet).Execute(&setResults)
 			if err != nil {
 				panic(err)
