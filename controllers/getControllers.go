@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"enchanted-castle-go/models"
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	supa "github.com/nedpals/supabase-go"
+	"gorm.io/gorm"
 )
 
 var validSetCodes = []string{"TFC", "RFB"}
@@ -22,13 +24,16 @@ func HealthCheck(c *gin.Context) {
 }
 
 // RETURN ALL CARDS IN DATABASE
-func GetAllCards(supabase *supa.Client) gin.HandlerFunc {
+func GetAllCards(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var results []models.Card
-		err := supabase.DB.From("all_cards").Select("*").Execute(&results)
-		if err != nil {
-			panic(err)
-		}
+		// var cards []models.Card
+		db.Model(&models.Card{}).Table("all_cards").Find(&results)
+
+		// err := supabase.DB.From("all_cards").Select("*").Execute(&results)
+		// if err != nil {
+		// panic(err)
+		// }
 
 		// Paginate the data based on query parameters (e.g., page and itemsPerPage)
 		page := 1
@@ -98,7 +103,7 @@ func GetAllCards(supabase *supa.Client) gin.HandlerFunc {
 }
 
 // ADVANCED SEARCH FUNCTION FOR CARDS
-func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
+func GetCardsByAdvanceSearch(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		sets, isSets := context.GetQueryArray("setCode")
 		colors, isColors := context.GetQueryArray("color")
@@ -106,40 +111,40 @@ func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
 		inkCost, isInkCost := context.GetQueryArray("inkCost")
 		loreValue, isLoreValue := context.GetQueryArray("loreValue")
 		rarity, isRarity := context.GetQueryArray("rarity")
-		name, isName := context.GetQueryArray("name")
+		name, isName := context.GetQuery("name")
 		franchiseCode, isFranchiseCode := context.GetQueryArray("franchiseCode")
 		// bodyText, isBodyText := context.GetQueryArray("bodyText")
 
 		var results []models.Card
-
-		allCards := supabase.DB.From("all_cards").Select("*")
+		queryDB := db.Model(&models.Card{}).Table("all_cards")
 
 		if isColors {
-			allCards.In("color", colors)
+			queryDB.Where("color IN ?", colors)
 		}
 		if isSets {
-			allCards.In("set_code", sets)
+			queryDB.Where("set_code IN ?", sets)
 		}
 		if isInkable {
-			allCards.In("inkable", inkable)
+			queryDB.Where("inkable IN ?", inkable)
 		}
 		if isInkCost {
-			allCards.In("ink_cost", inkCost)
+			queryDB.Where("ink_cost IN ?", inkCost)
 		}
 		if isLoreValue {
-			allCards.In("lore_value", loreValue)
+			queryDB.Where("lore_value IN ?", loreValue)
 		}
 		if isRarity {
-			allCards.In("rarity", rarity)
+			queryDB.Where("rarity IN ?", rarity)
 		}
 		if isName {
-			allCards.In("name", name)
+			query := fmt.Sprintf("SELECT * FROM all_cards WHERE name ILIKE '%%%s%%' OR subname ILIKE '%%%s%%';", name, name)
+			queryDB.Raw(query)
 		}
 		if isFranchiseCode {
-			allCards.In("franchise->>franchise_code", franchiseCode)
+			queryDB.Where("franchise->>'franchise_code' IN ?", franchiseCode)
 		}
 
-		err := allCards.Execute(&results)
+		queryDB.Scan(&results)
 
 		// Paginate the data based on query parameters (e.g., page and itemsPerPage)
 		page := 1
@@ -198,9 +203,6 @@ func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
 		// Extract the items for the current page
 		paginatedItems := results[startIndex:endIndex]
 
-		if err != nil {
-			panic(err)
-		}
 		context.JSON(http.StatusOK, gin.H{
 			"limit":      len(paginatedItems),
 			"page":       page,
@@ -246,7 +248,7 @@ func GetCardsBySetCode(supabase *supa.Client) gin.HandlerFunc {
 }
 
 // RETURN SINGLE CARD
-func GetSingleCardInSet(supabase *supa.Client) gin.HandlerFunc {
+func GetSingleCardInSet(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var result models.Card
 
@@ -254,11 +256,7 @@ func GetSingleCardInSet(supabase *supa.Client) gin.HandlerFunc {
 		upperSet := strings.ToUpper(set)
 		cardNumber := context.Param("cardNumber")
 
-		err := supabase.DB.From("all_cards").Select("*").Single().Eq("set_code", upperSet).Eq("number", cardNumber).Execute(&result)
-
-		if err != nil {
-			panic(err)
-		}
+		db.Model(&models.Card{}).Table("all_cards").Where("set_code = ?", upperSet).Where("number = ?", cardNumber).First(&result)
 
 		context.JSON(http.StatusOK, gin.H{
 			"data": result,

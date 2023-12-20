@@ -9,15 +9,17 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
-	"time"
-
-	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	supa "github.com/nedpals/supabase-go"
 )
 
 func pingHealthEndpoint() {
+	fmt.Println("Pinging!")
 	url := "https://enchanted-castle-server.onrender.com/health"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -29,10 +31,27 @@ func pingHealthEndpoint() {
 	fmt.Printf("Ping to %s - Status: %s\n", url, resp.Status)
 }
 
+func runCronJobs() {
+	fmt.Println("John Doe")
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Printf("Error loading .env file")
+	}
+
+	password := os.Getenv("SUPABASE_PASSWORD")
+	host := os.Getenv("SUPABASE_HOST")
+	user := os.Getenv("SUPABASE_USER")
+	dbName := os.Getenv("SUPABASE_NAME")
+	dbPort := os.Getenv("SUPABASE_PORT")
+
+	dsn := fmt.Sprintf("host=%s user=%s dbname=%s password=%s port=%s", host, user, dbName, password, dbPort)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	if err != nil {
+		fmt.Println("Error connecting to database", err)
 	}
 
 	supabaseUrl := os.Getenv("SUPABASE_URL")
@@ -47,20 +66,31 @@ func main() {
 		port = "9090"
 	}
 
-	// create a scheduler
-	scheduler := gocron.NewScheduler(time.UTC)
-	interval := 14
+	// CREATE GO ROUTINE TO PING /HEALTH ENDPOINT EVERY 10 MINUTES
+	go func() {
+		c := cron.New()
+		c.AddFunc("@every 10m", func() {
+			url := "https://enchanted-castle-server.onrender.com/health"
+			resp, err := http.Get(url)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			defer resp.Body.Close()
 
-	scheduler.Every(uint64(interval)).Minutes().Do(pingHealthEndpoint)
+			fmt.Printf("Ping to %s - Status: %s\n", url, resp.Status)
+		})
+		c.Start()
+	}()
 
 	// ROUTES
 	// HEALTH CHECK
 	router.GET("/health", controllers.HealthCheck)
 	// GET ROUTES
-	router.GET("/all", controllers.GetAllCards(supabase))
-	router.GET("/search", controllers.GetCardsByAdvanceSearch(supabase))
+	router.GET("/all", controllers.GetAllCards(supabase, db))
+	router.GET("/search", controllers.GetCardsByAdvanceSearch(supabase, db))
 	router.GET("/cards/:setCode", controllers.GetCardsBySetCode(supabase))
-	router.GET("/cards/:setCode/:cardNumber", controllers.GetSingleCardInSet(supabase))
+	router.GET("/cards/:setCode/:cardNumber", controllers.GetSingleCardInSet(supabase, db))
 	router.GET("/products", controllers.GetAllProducts(supabase))
 	router.GET("/products/:setCode", controllers.GetProductsBySetCode(supabase))
 
@@ -69,8 +99,4 @@ func main() {
 		log.Panicf("error: %s", err)
 	}
 
-	fmt.Printf("Server running on port " + port)
-
-	// start the scheduler
-	scheduler.StartBlocking()
 }
