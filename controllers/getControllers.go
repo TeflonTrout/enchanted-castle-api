@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"enchanted-castle-go/models"
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -11,24 +12,28 @@ import (
 
 	"github.com/gin-gonic/gin"
 	supa "github.com/nedpals/supabase-go"
+	"gorm.io/gorm"
 )
 
 var validSetCodes = []string{"TFC", "RFB"}
 
-func HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"health": "Server Online",
-	})
+func HealthCheck(db *gorm.DB) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		var results []models.Card
+		db.Model(&models.Card{}).Table("all_cards").Find(&results)
+
+		c.JSON(http.StatusOK, gin.H{
+			"health": "Server Online",
+		})
+	}
+	return gin.HandlerFunc(fn)
 }
 
 // RETURN ALL CARDS IN DATABASE
-func GetAllCards(supabase *supa.Client) gin.HandlerFunc {
+func GetAllCards(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var results []models.Card
-		err := supabase.DB.From("all_cards").Select("*").Execute(&results)
-		if err != nil {
-			panic(err)
-		}
+		db.Model(&models.Card{}).Table("all_cards").Find(&results)
 
 		// Paginate the data based on query parameters (e.g., page and itemsPerPage)
 		page := 1
@@ -98,48 +103,53 @@ func GetAllCards(supabase *supa.Client) gin.HandlerFunc {
 }
 
 // ADVANCED SEARCH FUNCTION FOR CARDS
-func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
+func GetCardsByAdvanceSearch(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		sets, isSets := context.GetQueryArray("setCode")
-		colors, isColors := context.GetQueryArray("color")
+		colors, isColors := context.GetQuery("color")
 		inkable, isInkable := context.GetQueryArray("inkable")
 		inkCost, isInkCost := context.GetQueryArray("inkCost")
 		loreValue, isLoreValue := context.GetQueryArray("loreValue")
-		rarity, isRarity := context.GetQueryArray("rarity")
-		name, isName := context.GetQueryArray("name")
+		rarity, isRarity := context.GetQuery("rarity")
+		name, isName := context.GetQuery("name")
 		franchiseCode, isFranchiseCode := context.GetQueryArray("franchiseCode")
-		// bodyText, isBodyText := context.GetQueryArray("bodyText")
+		bodyText, isBodyText := context.GetQuery("bodyText")
 
 		var results []models.Card
+		queryDB := db.Model(&models.Card{}).Table("all_cards")
 
-		allCards := supabase.DB.From("all_cards").Select("*")
-
+		fmt.Println(isRarity)
 		if isColors {
-			allCards.In("color", colors)
+			// SPLIT COLORS STRING INTO ARRAY OF VALUES
+			colorsArray := strings.Split(colors, ",")
+			queryDB.Where("color IN ?", colorsArray)
 		}
 		if isSets {
-			allCards.In("set_code", sets)
+			queryDB.Where("set_code IN ?", sets)
 		}
 		if isInkable {
-			allCards.In("inkable", inkable)
+			queryDB.Where("inkable IN ?", inkable)
 		}
 		if isInkCost {
-			allCards.In("ink_cost", inkCost)
+			queryDB.Where("ink_cost IN ?", inkCost)
 		}
 		if isLoreValue {
-			allCards.In("lore_value", loreValue)
+			queryDB.Where("lore_value IN ?", loreValue)
 		}
 		if isRarity {
-			allCards.In("rarity", rarity)
+			queryDB.Where(fmt.Sprintf("rarity::text ILIKE '%%%s%%'", rarity))
 		}
 		if isName {
-			allCards.In("name", name)
+			queryDB.Where(fmt.Sprintf("name ILIKE '%%%s%%' OR subname ILIKE '%%%s%%'", name, name))
 		}
 		if isFranchiseCode {
-			allCards.In("franchise->>franchise_code", franchiseCode)
+			queryDB.Where("franchise->>'franchise_code' IN ?", franchiseCode)
+		}
+		if isBodyText {
+			queryDB.Where(fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_array_elements_text(body_text) AS elem WHERE elem ILIKE '%%%s%%');", bodyText))
 		}
 
-		err := allCards.Execute(&results)
+		queryDB.Scan(&results)
 
 		// Paginate the data based on query parameters (e.g., page and itemsPerPage)
 		page := 1
@@ -198,9 +208,6 @@ func GetCardsByAdvanceSearch(supabase *supa.Client) gin.HandlerFunc {
 		// Extract the items for the current page
 		paginatedItems := results[startIndex:endIndex]
 
-		if err != nil {
-			panic(err)
-		}
 		context.JSON(http.StatusOK, gin.H{
 			"limit":      len(paginatedItems),
 			"page":       page,
@@ -246,7 +253,7 @@ func GetCardsBySetCode(supabase *supa.Client) gin.HandlerFunc {
 }
 
 // RETURN SINGLE CARD
-func GetSingleCardInSet(supabase *supa.Client) gin.HandlerFunc {
+func GetSingleCardInSet(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var result models.Card
 
@@ -254,11 +261,7 @@ func GetSingleCardInSet(supabase *supa.Client) gin.HandlerFunc {
 		upperSet := strings.ToUpper(set)
 		cardNumber := context.Param("cardNumber")
 
-		err := supabase.DB.From("all_cards").Select("*").Single().Eq("set_code", upperSet).Eq("number", cardNumber).Execute(&result)
-
-		if err != nil {
-			panic(err)
-		}
+		db.Model(&models.Card{}).Table("all_cards").Where("set_code = ?", upperSet).Where("number = ?", cardNumber).First(&result)
 
 		context.JSON(http.StatusOK, gin.H{
 			"data": result,
