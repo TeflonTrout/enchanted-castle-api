@@ -85,7 +85,7 @@ func main() {
 
 	// ROUTES
 	// HEALTH CHECK
-	router.GET("/health", controllers.HealthCheck)
+	router.GET("/health", controllers.HealthCheck(db))
 	// GET ROUTES
 	router.GET("/all", controllers.GetAllCards(supabase, db))
 	router.GET("/search", controllers.GetCardsByAdvanceSearch(supabase, db))
