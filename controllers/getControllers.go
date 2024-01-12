@@ -257,12 +257,14 @@ func GetSingleCardInSet(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var result models.Card
 
+		fmt.Println(context.Params)
 		set := context.Param("setCode")
 		upperSet := strings.ToUpper(set)
 		cardNumber := context.Param("cardNumber")
 
 		db.Model(&models.Card{}).Table("all_cards").Where("set_code = ?", upperSet).Where("number = ?", cardNumber).First(&result)
 
+		fmt.Println(result)
 		context.JSON(http.StatusOK, gin.H{
 			"data": result,
 		})

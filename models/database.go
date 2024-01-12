@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type Json interface{}
 
 type Database struct {
@@ -62,28 +64,28 @@ type Database struct {
 }
 
 type Card struct {
-	CardUID     string   `json:"card_uid"`
-	Name        string   `json:"name"`
-	Subname     string   `json:"subname"`
-	InkCost     int      `json:"ink_cost"`
-	Inkable     bool     `json:"inkable"`
-	Attack      int      `json:"attack"`
-	Willpower   int      `json:"willpower"`
-	ColorID     int      `json:"color_id"`
-	Color       string   `json:"color"`
-	Type        string   `json:"type"`
-	Abilities   []string `json:"abilities"`
-	BodyText    []string `json:"body_text"`
-	Flavor      string   `json:"flavor"`
-	Lore        string   `json:"lore"`
-	Artist      string   `json:"artist"`
-	SetID       int      `json:"set_id"`
-	SetCode     string   `json:"set_code"`
-	Number      int      `json:"number"`
-	NumberInSet string   `json:"number_in_set"`
-	Rarity      string   `json:"rarity"`
-	Image       string   `json:"image"`
-	Subtypes    []string `json:"subtypes"`
+	CardUID     string          `json:"card_uid"`
+	Name        string          `json:"name"`
+	Subname     string          `json:"subname"`
+	InkCost     int             `json:"ink_cost"`
+	Inkable     bool            `json:"inkable"`
+	Attack      int             `json:"attack"`
+	Willpower   int             `json:"willpower"`
+	ColorID     int             `json:"color_id"`
+	Color       string          `json:"color"`
+	Type        string          `json:"type"`
+	Abilities   []string        `json:"abilities"`
+	BodyText    json.RawMessage `json:"body_text"`
+	Flavor      string          `json:"flavor"`
+	Lore        string          `json:"lore"`
+	Artist      string          `json:"artist"`
+	SetID       int             `json:"set_id"`
+	SetCode     string          `json:"set_code"`
+	Number      int             `json:"number"`
+	NumberInSet string          `json:"number_in_set"`
+	Rarity      string          `json:"rarity"`
+	Image       string          `json:"image"`
+	Subtypes    []string        `json:"subtypes"`
 	Franchise   struct {
 		FranchiseID   interface{} `json:"franchise_id"`
 		FranchiseCode string      `json:"franchise_code"`
