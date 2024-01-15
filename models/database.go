@@ -94,3 +94,10 @@ type Card struct {
 	TextSeparator string `json:"text_separator"`
 	ID            int    `json:"id"`
 }
+
+type SetData struct {
+	Id         int    `json:"id"`
+	Name       string `json:"name"`
+	Card_count int    `json:"card_count"`
+	Set_code   string `json:"set_code"`
+}

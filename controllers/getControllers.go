@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var validSetCodes = []string{"TFC", "RFB"}
+var validSetCodes = []string{"P1", "TFC", "RFB", "ITI"}
 
 func HealthCheck(db *gorm.DB) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
@@ -30,7 +30,7 @@ func HealthCheck(db *gorm.DB) gin.HandlerFunc {
 }
 
 // RETURN ALL CARDS IN DATABASE
-func GetAllCards(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
+func GetAllCards(db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var results []models.Card
 		db.Model(&models.Card{}).Table("all_cards").Find(&results)
@@ -103,7 +103,7 @@ func GetAllCards(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 }
 
 // ADVANCED SEARCH FUNCTION FOR CARDS
-func GetCardsByAdvanceSearch(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
+func GetCardsByAdvanceSearch(db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		sets, isSets := context.GetQueryArray("setCode")
 		colors, isColors := context.GetQuery("color")
@@ -219,29 +219,59 @@ func GetCardsByAdvanceSearch(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc
 }
 
 // RETURN ALL CARDS IN A SET
-func GetCardsBySetCode(supabase *supa.Client) gin.HandlerFunc {
+func GetCardsBySetCode(db *gorm.DB) gin.HandlerFunc {
 	fn := func(context *gin.Context) {
 		var results []models.Card
-		var setResults []any
+		var setResults models.SetData
 
 		set := context.Param("setCode")
 		upperSet := strings.ToUpper(set)
 
+		err := db.Model(&models.Card{}).Table("all_cards").Where("set_code = ?", upperSet).Scan(&results)
+		setErr := db.Model(&models.SetData{}).Table("card_sets").Where("set_code = ?", upperSet).Scan(&setResults)
+
+		if err != nil {
+			fmt.Println("ERR HERE")
+		}
+		if setErr != nil {
+			fmt.Println("ERR HERE2")
+		}
+
 		// CHECK IF SET CODE IS A VALID SET CODE
 		if slices.Contains(validSetCodes, upperSet) {
-			err := supabase.DB.From("all_cards").Select("*").Eq("set_code", upperSet).Execute(&results)
-			setErr := supabase.DB.From("card_sets").Select("*").Eq("set_code", upperSet).Execute(&setResults)
-			if err != nil {
-				panic(err)
-			}
-			if setErr != nil {
-				panic(err)
+			// Extract page and itemsPerPage from query parameters if provided
+			if sortParam := context.Request.URL.Query().Get("sort"); sortParam != "" {
+				if sortParam == "alphabetical" {
+					sort.Slice(results, func(i, j int) bool {
+						return results[i].Name < results[j].Name
+					})
+				}
+				if sortParam == "cardNumber" {
+					sort.Slice(results, func(i, j int) bool {
+						return results[i].Number < results[j].Number
+					})
+				}
+				if sortParam == "attack" {
+					sort.Slice(results, func(i, j int) bool {
+						return results[i].Attack > results[j].Attack
+					})
+				}
+				if sortParam == "willpower" {
+					sort.Slice(results, func(i, j int) bool {
+						return results[i].Willpower > results[j].Willpower
+					})
+				}
+				if sortParam == "lore" {
+					sort.Slice(results, func(i, j int) bool {
+						return results[i].Lore > results[j].Lore
+					})
+				}
 			}
 
 			context.JSON(http.StatusOK, gin.H{
 				"length":  len(results),
 				"data":    results,
-				"setData": setResults[0],
+				"setData": setResults,
 			})
 		} else {
 			context.JSON(http.StatusBadRequest, gin.H{
