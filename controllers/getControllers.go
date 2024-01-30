@@ -294,7 +294,6 @@ func GetSingleCardInSet(supabase *supa.Client, db *gorm.DB) gin.HandlerFunc {
 
 		db.Model(&models.Card{}).Table("all_cards").Where("set_code = ?", upperSet).Where("number = ?", cardNumber).First(&result)
 
-		fmt.Println(result)
 		context.JSON(http.StatusOK, gin.H{
 			"data": result,
 		})

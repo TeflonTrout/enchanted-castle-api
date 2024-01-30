@@ -1,6 +1,6 @@
 package models
 
-import "encoding/json"
+import "github.com/lib/pq"
 
 type Json interface{}
 
@@ -64,35 +64,37 @@ type Database struct {
 }
 
 type Card struct {
-	CardUID     string          `json:"card_uid"`
-	Name        string          `json:"name"`
-	Subname     string          `json:"subname"`
-	InkCost     int             `json:"ink_cost"`
-	Inkable     bool            `json:"inkable"`
-	Attack      int             `json:"attack"`
-	Willpower   int             `json:"willpower"`
-	ColorID     int             `json:"color_id"`
-	Color       string          `json:"color"`
-	Type        string          `json:"type"`
-	Abilities   []string        `json:"abilities"`
-	BodyText    json.RawMessage `json:"body_text"`
-	Flavor      string          `json:"flavor"`
-	Lore        string          `json:"lore"`
-	Artist      string          `json:"artist"`
-	SetID       int             `json:"set_id"`
-	SetCode     string          `json:"set_code"`
-	Number      int             `json:"number"`
-	NumberInSet string          `json:"number_in_set"`
-	Rarity      string          `json:"rarity"`
-	Image       string          `json:"image"`
-	Subtypes    []string        `json:"subtypes"`
-	Franchise   struct {
-		FranchiseID   interface{} `json:"franchise_id"`
-		FranchiseCode string      `json:"franchise_code"`
-		FranchiseName string      `json:"franchise_name"`
-	} `json:"franchise"`
-	TextSeparator string `json:"text_separator"`
-	ID            int    `json:"id"`
+	CardUID       string         `json:"uid" gorm:"type:text"`
+	Name          string         `json:"name"`
+	Subname       string         `json:"subname"`
+	InkCost       int            `json:"ink_cost"`
+	Inkable       bool           `json:"inkable"`
+	Attack        int            `json:"attack"`
+	Willpower     int            `json:"willpower"`
+	ColorID       int            `json:"color_id"`
+	Color         string         `json:"color"`
+	Type          string         `json:"type"`
+	Abilities     []string       `json:"abilities" gorm:"serializer:json"`
+	BodyText      []string       `json:"body_text" gorm:"serializer:json"`
+	Flavor        string         `json:"flavor"`
+	Lore          int            `json:"lore"`
+	Artist        string         `json:"artist"`
+	SetID         int            `json:"set_id"`
+	SetCode       string         `json:"set_code"`
+	Number        int            `json:"number"`
+	NumberInSet   string         `json:"number_in_set"`
+	Rarity        string         `json:"rarity"`
+	Image         string         `json:"image"`
+	Subtypes      pq.StringArray `json:"subtypes" gorm:"type:text[]"`
+	Franchise     Franchise      `json:"franchise" gorm:"serializer:json"`
+	ID            int            `json:"id"`
+	TextSeparator string         `json:"text_separator"`
+}
+
+type Franchise struct {
+	FranchiseID   int    `json:"franchise_id"`
+	FranchiseCode string `json:"franchise_code"`
+	FranchiseName string `json:"franchise_name"`
 }
 
 type SetData struct {
